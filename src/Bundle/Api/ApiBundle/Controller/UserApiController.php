@@ -109,31 +109,25 @@ class UserApiController extends Controller
      */
     public function updateAction(Request $request)
     {
-//        $user = $this->get('doctrine.orm.entity_manager')
-//            ->getRepository('UserBundle:User')
-//            ->find($request->get('id')); // L'identifiant en tant que paramètre n'est plus nécessaire
-//        /* @var $user User */
-//
-//        if (empty($user)) {
-//            return new JsonResponse(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
-//        }
-//
-//        dump($request->request->all());die();
-//
-//        $form = $this->createForm(UserType::class, $user);
-//
-//        $form->submit($request->request->all());
-//
-////        if ($form->isValid()) {
-//            $em = $this->get('doctrine.orm.entity_manager');
-//            // l'entité vient de la base, donc le merge n'est pas nécessaire.
-//            // il est utilisé juste par soucis de clarté
-//            $em->merge($user);
-//            $em->flush();
-//            return $user;
-////        } else {
-////            return new JsonResponse(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
-////        }
+        $user = $this->get('doctrine.orm.entity_manager')
+            ->getRepository('UserBundle:User')
+            ->find($request->get('id'));
+        /* @var $user User */
+
+        if (empty($user)) {
+            return new JsonResponse(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $form = $this->createForm(UserType::class, $user);
+
+        $_image = $request->files->get('imgUrl');
+        $_role = $this->roleManager()->getTzeRoleById((int) $request->get('skRole'));
+        $user->setskRole($_role);
+        $form->submit($request->request->all());
+
+        $this->userManager()->addEntity($user,$_image);
+
+        return new JsonResponse(['message' => 'User not biz'], Response::HTTP_ACCEPTED);
     }
 
 }
