@@ -12,13 +12,16 @@ namespace App\Bundle\Api\ApiBundle\Controller;
 use App\Bundle\User\Entity\User;
 use App\Bundle\User\Form\UserType;
 use App\Shared\Services\Utils\EntityName;
+use App\Shared\Services\Utils\RoleName;
 use App\Shared\Services\Utils\ServiceName;
 use Doctrine\ORM\ORMException;
+use FOS\UserBundle\Model\UserInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 class UserApiController extends Controller
 {
@@ -58,6 +61,7 @@ class UserApiController extends Controller
     }
 
     /**
+     * Get List User
      * @return JsonResponse
      * @throws \Exception
      */
@@ -67,31 +71,39 @@ class UserApiController extends Controller
 
         $_users = $_user_manager->getAllList(EntityName::USER);
 
-        return $this->response('participant_list', $_users);
+        return $this->response('user_list', $_users);
     }
 
     /**
+     * Add user
      * @param Request $_request
      * @return JsonResponse
-     * @throws \Doctrine\ORM\ORMException
+     * @throws ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
     public function newUserAction(Request $_request)
     {
         $_user = new User();
+        $form = $this->createForm(UserType::class, $_user);
+        $_image = $_request->files->get('imgUrl');
 
-        $_image = $_request->files->get('image');
-        $_role = $this->roleManager()->getTzeRoleById((int) $_request->get('role'));
-        $_user->setskRole($_role);
-        $_user->setUsrAddress($_request->get('adresse'));
-        $_user->setUsrFirstname($_request->get('firstname'));
-        $_user->setUsrLastname($_request->get('lastname'));
-        $_user->setEmail($_request->get('email'));
-        $_user->setUsername($_request->get('username'));
-        $_user->setPassword($_request->get('password'));
-        $_user->setPassword($_request->get('password'));
-        $_user->setUsrPhone($_request->get('phone'));
-        $_user->setUsrIsValid($_request->get('isvalid'));
+        /*
+         * Set role
+         */
+        $_type = $this->roleManager()->getTzeRoleById((int) $_request->get('skRole'));
+        $_role = RoleName::$ROLE_TYPE[$_type->getRlName()];
+        $_user->setRoles(array($_role));
+
+        /*
+         * Encrypted password
+         */
+        $plainPassword = $_request->get('password');
+        $_user->setPassword($plainPassword);
+
+        /*
+         * submit new user
+         */
+        $form->submit($_request->request->all());
         $this->userManager()->addEntity($_user,$_image);
 
         try {
@@ -102,6 +114,7 @@ class UserApiController extends Controller
     }
 
     /**
+     * Update user
      * @param Request $request
      * @return User|null|object|\Symfony\Component\Form\FormInterface|JsonResponse
      * @throws ORMException
@@ -127,7 +140,7 @@ class UserApiController extends Controller
 
         $this->userManager()->addEntity($user,$_image);
 
-        return new JsonResponse(['message' => 'User not biz'], Response::HTTP_ACCEPTED);
+        return $this->response('status', Response::HTTP_ACCEPTED);
     }
 
 }
